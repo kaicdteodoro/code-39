@@ -1,0 +1,11 @@
+services:
+  code39:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: code39:latest
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    stdin_open: true
+    tty: true

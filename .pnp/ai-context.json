@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "projectName": "code-39",
+    "description": "CLI em Python para geração de códigos de barras Code 39 sem dígito verificador para as 500 comandas do Atlântico Gastrobar. Gera PDF único de alta qualidade com controle de sequencialismo, prevenção de duplicatas e log de lotes.",
+    "version": "1.0.0"
+  },
+  "architecture": {
+    "stylePreference": "layered",
+    "realTimeRequirements": false,
+    "multiTenancy": false,
+    "eventDriven": false,
+    "microservices": false
+  },
+  "entities": [
+    "agência digital",
+    "operador técnico do estabelecimento",
+    "gráfica responsável pela impressão das comandas",
+    "Geração de código de barras Code 39 sem dígito verificador",
+    "Numeração sequencial com zeros à esquerda e prefixo ATL (ATL001 a ATL500)",
+    "Exportação em PDF único de alta qualidade com número legível e referência",
+    "Controle de duplicatas via registro persistente de comandas já geradas",
+    "Barra de progresso no terminal durante geração",
+    "Log de lotes com data, hora, quantidade e intervalo gerado"
+  ],
+  "invariants": [
+    "Code 39 sem dígito verificador obrigatório",
+    "Sem dependência de serviços externos ou internet",
+    "Compatível com Windows e macOS para operação pela agência",
+    "Total de 500 comandas para o Atlântico Gastrobar",
+    "Numeração de ATL001 a ATL500",
+    "Output deve ser diretamente utilizável pela gráfica sem pós-processamento",
+    "Operado via linha de comando por técnico da agência ou do estabelecimento",
+    "Sem necessidade de instalação de servidor ou banco de dados"
+  ],
+  "constraints": [
+    "Code 39 sem dígito verificador obrigatório",
+    "Sem dependência de serviços externos ou internet",
+    "Compatível com Windows e macOS para operação pela agência",
+    "Total de 500 comandas para o Atlântico Gastrobar",
+    "Numeração de ATL001 a ATL500",
+    "Output deve ser diretamente utilizável pela gráfica sem pós-processamento",
+    "Operado via linha de comando por técnico da agência ou do estabelecimento",
+    "Sem necessidade de instalação de servidor ou banco de dados"
+  ],
+  "nonGoals": [
+    "Não integrar com o sistema TOTS ou qualquer sistema externo",
+    "Não gerar QR Codes",
+    "Não ter interface web ou mobile",
+    "Não gerenciar uso operacional das comandas em tempo real",
+    "Não implementar dígito verificador"
+  ],
+  "integrationPoints": [
+    "nenhuma integração externa prevista"
+  ],
+  "aiRules": {
+    "allowed": [],
+    "forbidden": [
+      "integrar com o sistema TOTS ou qualquer sistema externo",
+      "gerar QR Codes",
+      "ter interface web ou mobile",
+      "gerenciar uso operacional das comandas em tempo real",
+      "implementar dígito verificador"
+    ],
+    "modificationPolicy": "Confirm changes that affect constraints, non-goals, or security."
+  }
+}

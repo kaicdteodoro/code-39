@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.pyc
+*.pyo
+*.pyd
+
+dist/
+build/
+*.egg-info/
+
+output/*
+!output/.gitkeep
+data/registry.json
+data/batches.jsonl

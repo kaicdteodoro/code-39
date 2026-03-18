@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code-39"
+version = "1.0.0"
+description = "CLI for generating print-ready Code 39 barcode batches for Atlântico Gastrobar."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "Pillow>=12.1.1",
+  "reportlab>=4.2.0",
+  "rich>=13.7.0",
+  "typer>=0.12.3"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0"
+]
+
+[project.scripts]
+code39 = "code39.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

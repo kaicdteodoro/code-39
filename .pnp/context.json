@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "projectName": "code-39",
+    "description": "CLI em Python para geração de códigos de barras Code 39 sem dígito verificador para as 500 comandas do Atlântico Gastrobar. Gera PDF único de alta qualidade com controle de sequencialismo, prevenção de duplicatas e log de lotes. Operado internamente pela agência ou pelo estabelecimento.",
+    "version": "1.0.0",
+    "frameworkVersion": "1.0.0",
+    "createdAt": "2026-03-18T00:00:00Z",
+    "updatedAt": "2026-03-18T00:00:00Z"
+  },
+  "product": {
+    "type": "cli_tool",
+    "platform": "backend_service",
+    "domain": "barcode_generation",
+    "industry": "food_and_beverage",
+    "primaryUsers": ["agência digital", "operador técnico do estabelecimento"],
+    "secondaryUsers": ["gráfica responsável pela impressão das comandas"],
+    "compliance": ["nenhuma regulatória aplicável"]
+  },
+  "goals": {
+    "primary": [
+      "Gerar códigos de barras Code 39 sem dígito verificador para comandas numeradas de ATL001 a ATL500",
+      "Produzir PDF único de alta qualidade pronto para envio à gráfica",
+      "Controlar sequencialismo e evitar geração de comandas duplicadas",
+      "Registrar log com data e hora de cada lote gerado"
+    ],
+    "secondary": [
+      "Permitir geração individual de comanda por número de referência",
+      "Suportar limite de quantidade para testes (ex: gerar apenas as 5 primeiras)",
+      "Exibir barra de progresso durante a geração",
+      "Prefixo ATL no código para identificação do estabelecimento"
+    ],
+    "nonGoals": [
+      "Não integrar com o sistema TOTS ou qualquer sistema externo",
+      "Não gerar QR Codes",
+      "Não ter interface web ou mobile",
+      "Não gerenciar uso operacional das comandas em tempo real",
+      "Não implementar dígito verificador"
+    ]
+  },
+  "functionalScope": {
+    "coreCapabilities": [
+      "Geração de código de barras Code 39 sem dígito verificador",
+      "Numeração sequencial com zeros à esquerda e prefixo ATL (ATL001 a ATL500)",
+      "Exportação em PDF único de alta qualidade com número legível e referência",
+      "Controle de duplicatas via registro persistente de comandas já geradas",
+      "Barra de progresso no terminal durante geração",
+      "Log de lotes com data, hora, quantidade e intervalo gerado"
+    ],
+    "optionalCapabilities": [
+      "Geração individual de comanda específica por número de referência",
+      "Flag de limite de quantidade para geração parcial",
+      "Regeneração forçada de comanda já existente com flag --force"
+    ],
+    "futureCapabilities": [
+      "Suporte a múltiplas unidades do estabelecimento com prefixos diferentes",
+      "Geração de PNG individual por comanda além do PDF",
+      "Interface simples de linha de comando interativa"
+    ],
+    "integrations": ["nenhuma integração externa prevista"]
+  },
+  "architecture": {
+    "stylePreference": "layered",
+    "realTimeRequirements": false,
+    "multiTenancy": false,
+    "eventDriven": false,
+    "microservices": false
+  },
+  "technicalPreferences": {
+    "frontend": {
+      "stack": ["none"],
+      "stateManagement": "none",
+      "styling": "none",
+      "testing": ["pytest"]
+    },
+    "backend": {
+      "runtime": "Python 3.11+",
+      "framework": "none (CLI puro com argparse ou click)",
+      "apiStyle": "none"
+    },
+    "database": {
+      "primary": "JSON file (registro local de comandas geradas)",
+      "caching": "none",
+      "search": "none"
+    },
+    "infrastructure": {
+      "provider": "local",
+      "orchestration": "none",
+      "cicd": "none"
+    }
+  },
+  "qualityAttributes": {
+    "performance": [
+      "Geração de 500 comandas em menos de 30 segundos",
+      "PDF final otimizado para impressão em alta resolução (300dpi equivalente)"
+    ],
+    "availability": "ferramenta local, sem requisito de uptime",
+    "security": [
+      "Prefixo ATL para evitar aceitação de comandas de outros estabelecimentos",
+      "Zeros à esquerda fixos para dificultar falsificação manual",
+      "Log imutável de lotes gerados com timestamp para rastreabilidade",
+      "Bloqueio de regeeração de comanda já existente sem flag explícita --force"
+    ]
+  },
+  "constraints": {
+    "technical": [
+      "Code 39 sem dígito verificador obrigatório",
+      "Sem dependência de serviços externos ou internet",
+      "Compatível com Windows e macOS para operação pela agência"
+    ],
+    "business": [
+      "Total de 500 comandas para o Atlântico Gastrobar",
+      "Numeração de ATL001 a ATL500",
+      "Output deve ser diretamente utilizável pela gráfica sem pós-processamento"
+    ],
+    "operational": [
+      "Operado via linha de comando por técnico da agência ou do estabelecimento",
+      "Sem necessidade de instalação de servidor ou banco de dados"
+    ]
+  },
+  "ai": {
+    "aiAssistedDevelopment": true,
+    "aiAutonomyLevel": "semi-autonomous"
+  }
+}

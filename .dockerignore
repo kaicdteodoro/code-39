@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+__pycache__
+.pytest_cache
+.mypy_cache
+dist
+build
+*.egg-info
+output
+data
+docs
+.pnp
