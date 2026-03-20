@@ -11,6 +11,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
+from .formatting import PREFIX
+
 ProgressCallback = Callable[[str], None] | None
 BRAND_TEXT = "Atlantico Gastrobar"
 PNG_BACKGROUND = "white"
@@ -20,6 +22,17 @@ PNG_FOREGROUND = "black"
 def _chunks(values: list[str], size: int) -> list[list[str]]:
     """Split references into page-sized chunks."""
     return [values[index : index + size] for index in range(0, len(values), size)]
+
+
+def _barcode_value(reference: str) -> str:
+    """Extract the numeric part for barcode encoding.
+
+    Business rule: the *encoded code* (bars) must be digits-only.
+    """
+    normalized = reference.strip().upper()
+    if normalized.startswith(PREFIX):
+        return normalized[len(PREFIX) :]
+    return normalized
 
 
 def _load_font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -46,9 +59,9 @@ def _draw_centered_text(
     draw.text((center_x - (width / 2), baseline_y - height), text, fill=PNG_FOREGROUND, font=font)
 
 
-def _code39_pattern(reference: str) -> str:
+def _code39_pattern(value: str) -> str:
     """Return the decomposed bar/space pattern for a Code 39 reference."""
-    barcode = code39.Standard39(reference, checksum=0, stop=1)
+    barcode = code39.Standard39(value, checksum=0, stop=1)
     barcode.validate()
     barcode.encode()
     return barcode.decompose()
@@ -57,7 +70,7 @@ def _code39_pattern(reference: str) -> str:
 def _draw_code39_bars(
     draw: ImageDraw.ImageDraw,
     *,
-    reference: str,
+    barcode_value: str,
     x: int,
     y: int,
     bar_height: int,
@@ -65,7 +78,7 @@ def _draw_code39_bars(
     wide_ratio: int,
 ) -> int:
     """Draw the barcode bars and return the total rendered width."""
-    pattern = _code39_pattern(reference)
+    pattern = _code39_pattern(barcode_value)
     cursor_x = x
     widths = {
         "b": narrow_width,
@@ -125,15 +138,16 @@ def render_reference_png(reference: str, output_path: Path) -> Path:
     narrow_width = 6
     wide_ratio = 3
     bar_height = 220
+    barcode_value = _barcode_value(reference)
     barcode_width = sum(
         narrow_width * wide_ratio if token in {"B", "S"} else narrow_width
-        for token in _code39_pattern(reference)
+        for token in _code39_pattern(barcode_value)
     )
     barcode_x = box_x + max((box_width - barcode_width) // 2, 30)
     barcode_y = box_y + ((box_height - bar_height) // 2)
     _draw_code39_bars(
         draw,
-        reference=reference,
+        barcode_value=barcode_value,
         x=barcode_x,
         y=barcode_y,
         bar_height=bar_height,
@@ -226,7 +240,7 @@ def render_batch_pdf(
             pdf.drawCentredString(x + (cell_width / 2), brand_y, BRAND_TEXT)
 
             barcode = code39.Standard39(
-                reference,
+                _barcode_value(reference),
                 barWidth=0.33 * mm,
                 barHeight=14 * mm,
                 checksum=0,
