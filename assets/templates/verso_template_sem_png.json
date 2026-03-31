@@ -1,0 +1,45 @@
+{
+  "card_width_mm": 70.0,
+  "card_height_mm": 90.0,
+  "barcode_zone_mm": {
+    "x": 15.19,
+    "y": 65.26,
+    "w": 39.63,
+    "h": 19.48,
+    "border_radius_mm": 1.5,
+    "padding_mm": 2.5
+  },
+  "barcode_rect_mm": {
+    "x": 17.69,
+    "y": 67.76,
+    "w": 34.63,
+    "h": 14.48
+  },
+  "sheet_layout": {
+    "page_width_mm": 70.0,
+    "page_height_mm": 104.0,
+    "margin_left_mm": 0.0,
+    "margin_top_mm": 7.0,
+    "gap_x_mm": 0.0,
+    "gap_y_mm": 0.0,
+    "cards_per_row": 1,
+    "cards_per_col": 1
+  },
+  "card_style": {
+    "border_radius_mm": 0.0,
+    "border_width_pt": 0.1
+  },
+  "background_pdf": "verso_template_marcado_v4.pdf",
+  "barcode_options": {
+    "format": "code39",
+    "digits_only": true,
+    "add_checksum": false,
+    "module_width_mm": 0.35,
+    "module_height_mm": 10.0,
+    "quiet_zone_mm": 3.5,
+    "font_size_pt": 6,
+    "text_distance_mm": 1.5,
+    "write_text": true,
+    "dpi": 300
+  }
+}

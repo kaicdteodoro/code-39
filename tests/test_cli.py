@@ -168,6 +168,38 @@ def test_generate_command_rejects_invalid_limit(tmp_path: Path) -> None:
     assert "Limit must be greater than zero" in result.stdout
 
 
+def test_generate_command_supports_cards_mode(tmp_path: Path) -> None:
+    output = tmp_path / "cards.pdf"
+    png_dir = tmp_path / "cards-png"
+    registry = tmp_path / "registry.json"
+    history = tmp_path / "history.jsonl"
+
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "--mode",
+            "cards",
+            "--template",
+            "tests/fixtures/card_template_stub.json",
+            "--limit",
+            "1",
+            "--output",
+            str(output),
+            "--png-dir",
+            str(png_dir),
+            "--registry",
+            str(registry),
+            "--history",
+            str(history),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output.exists()
+    assert (png_dir / "ATL001.png").exists()
+
+
 def test_status_command_reports_registry_metrics(tmp_path: Path) -> None:
     output = tmp_path / "out.pdf"
     registry = tmp_path / "registry.json"

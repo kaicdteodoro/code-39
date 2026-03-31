@@ -14,3 +14,6 @@ output/*
 !output/.gitkeep
 data/registry.json
 data/batches.jsonl
+*:Zone.Identifier
+/Comanda 7x9 - Atlântico.pdf
+/verso_arte_com_buraco.png

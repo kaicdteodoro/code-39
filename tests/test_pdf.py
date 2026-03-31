@@ -1,7 +1,7 @@
-import re
 from pathlib import Path
 
 import pytest
+from pypdf import PdfReader
 
 from code39.pdf import derive_png_output_dir, render_batch_pdf, render_batch_pngs, render_reference_png
 
@@ -15,15 +15,15 @@ def test_render_batch_pdf_creates_non_empty_file(tmp_path: Path) -> None:
     assert output_path.stat().st_size > 0
 
 
-def test_render_batch_pdf_includes_references_and_footer(tmp_path: Path) -> None:
+def test_render_batch_pdf_includes_references(tmp_path: Path) -> None:
     output_path = tmp_path / "batch.pdf"
 
     render_batch_pdf(["ATL001", "ATL002"], output_path)
 
-    content = output_path.read_bytes()
-    assert b"ATL001" in content
-    assert b"ATL002" in content
-    assert b"Page 1/1" in content
+    reader = PdfReader(str(output_path))
+    text = "".join(p.extract_text() or "" for p in reader.pages)
+    assert "ATL001" in text
+    assert "ATL002" in text
 
 
 def test_render_batch_pdf_paginates_after_ten_labels(tmp_path: Path) -> None:
@@ -32,10 +32,8 @@ def test_render_batch_pdf_paginates_after_ten_labels(tmp_path: Path) -> None:
 
     render_batch_pdf(references, output_path)
 
-    content = output_path.read_bytes()
-    assert b"Page 1/2" in content
-    assert b"Page 2/2" in content
-    assert len(re.findall(rb"/Type /Page\b", content)) >= 2
+    reader = PdfReader(str(output_path))
+    assert len(reader.pages) >= 2
 
 
 def test_render_batch_pdf_rejects_empty_batches(tmp_path: Path) -> None:

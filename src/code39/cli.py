@@ -10,6 +10,8 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeEl
 from rich.table import Table
 
 from . import __version__
+from .card_renderer import interleave_front_verso, render_batch_cards_pdf, render_batch_cards_pngs
+from .card_template import CardTemplate, load_card_template
 from .pdf import derive_png_output_dir, render_batch_pdf, render_batch_pngs
 from .registry import RegistryError, RegistryStore
 from .service import build_batch_plan, find_duplicates, next_available_reference
@@ -45,6 +47,10 @@ def generate(
     history: Path = typer.Option(DEFAULT_HISTORY, help="Append-only batch history path."),
     png: bool = typer.Option(True, "--png/--no-png", help="Generate one PNG file per reference."),
     force: bool = typer.Option(False, "--force", help="Allow regeneration of previously issued references."),
+    mode: str = typer.Option("labels", "--mode", help="Rendering mode: labels (A4 grid) or cards (template-based)."),
+    template: Path | None = typer.Option(None, "--template", help="Card template JSON (required when --mode cards)."),
+    front_pdf: Path | None = typer.Option(None, "--front-pdf", help="PDF da frente para intercalar com o verso (modo cards)."),
+    front_pages_per_verso: int = typer.Option(2, "--front-pages-per-verso", help="Páginas da frente antes de cada verso (ex: 2 = pula 2, joga verso)."),
 ) -> None:
     """Generate a PDF batch and persist the issued references."""
     try:
@@ -52,6 +58,8 @@ def generate(
     except ValueError as error:
         console.print(f"[red]Error:[/red] {error}")
         raise typer.Exit(1) from error
+
+    normalized_mode = mode.strip().lower()
 
     store = RegistryStore(registry, history)
     resolved_png_dir = png_dir or derive_png_output_dir(output)
@@ -83,25 +91,77 @@ def generate(
                     f"[bold cyan]Generating {plan.quantity} reference(s)[/bold cyan] "
                     f"from [bold]{plan.first_reference}[/bold] to [bold]{plan.last_reference}[/bold]"
                 )
-                render_batch_pdf(
-                    plan.references,
-                    output,
-                    progress_callback=lambda reference: progress.update(
-                        task,
-                        description=f"Rendering PDF {reference}",
-                        advance=1,
-                    ),
-                )
-                if png:
-                    render_batch_pngs(
+
+                if normalized_mode == "labels":
+                    render_batch_pdf(
                         plan.references,
-                        resolved_png_dir,
+                        output,
                         progress_callback=lambda reference: progress.update(
                             task,
-                            description=f"Rendering PNG {reference}",
+                            description=f"Rendering PDF {reference}",
                             advance=1,
                         ),
                     )
+                    if png:
+                        render_batch_pngs(
+                            plan.references,
+                            resolved_png_dir,
+                            progress_callback=lambda reference: progress.update(
+                                task,
+                                description=f"Rendering PNG {reference}",
+                                advance=1,
+                            ),
+                        )
+                elif normalized_mode == "cards":
+                    if template is None:
+                        console.print(
+                            "[red]Missing template.[/red] Provide --template when --mode cards."
+                        )
+                        raise typer.Exit(4)
+                    card_template: CardTemplate = load_card_template(template)
+
+                    verso_output = output
+                    if front_pdf is not None:
+                        if not front_pdf.exists():
+                            console.print(f"[red]Front PDF not found:[/red] {front_pdf}")
+                            raise typer.Exit(5)
+                        verso_output = output.with_name(f"{output.stem}-verso-only.pdf")
+
+                    render_batch_cards_pdf(
+                        plan.references,
+                        verso_output,
+                        card_template,
+                        progress_callback=lambda reference: progress.update(
+                            task,
+                            description=f"Rendering Cards PDF {reference}",
+                            advance=1,
+                        ),
+                    )
+
+                    if front_pdf is not None:
+                        interleave_front_verso(
+                            front_pdf,
+                            verso_output,
+                            output,
+                            front_pages_per_verso=front_pages_per_verso,
+                        )
+                        verso_output.unlink(missing_ok=True)
+
+                    if png:
+                        render_batch_cards_pngs(
+                            plan.references,
+                            resolved_png_dir,
+                            card_template,
+                            progress_callback=lambda reference: progress.update(
+                                task,
+                                description=f"Rendering Card PNG {reference}",
+                                advance=1,
+                            ),
+                        )
+                else:
+                    console.print(f"[red]Unknown mode:[/red] {mode}. Use 'labels' or 'cards'.")
+                    raise typer.Exit(4)
+
                 store.register_batch(plan.references, output_file=str(output), force=force)
         except RegistryError as error:
             raise _exit_for_storage_error(error) from error
@@ -113,8 +173,11 @@ def generate(
     table.add_row("Quantity", str(plan.quantity))
     table.add_row("First", plan.first_reference)
     table.add_row("Last", plan.last_reference)
+    table.add_row("Mode", normalized_mode)
     table.add_row("PNG output", str(resolved_png_dir) if png else "disabled")
     table.add_row("Force", "yes" if force else "no")
+    if normalized_mode == "cards" and front_pdf is not None:
+        table.add_row("Front PDF", str(front_pdf))
     console.print(table)
 
 

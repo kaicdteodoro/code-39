@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 from typing import Callable
 
+from barcode import Code39
+from barcode.writer import ImageWriter
+from fpdf import FPDF
 from PIL import Image, ImageDraw, ImageFont
-from reportlab.graphics.barcode import code39
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas
 
 from .formatting import PREFIX
 
@@ -61,10 +61,29 @@ def _draw_centered_text(
 
 def _code39_pattern(value: str) -> str:
     """Return the decomposed bar/space pattern for a Code 39 reference."""
+    from reportlab.graphics.barcode import code39
+
     barcode = code39.Standard39(value, checksum=0, stop=1)
     barcode.validate()
     barcode.encode()
     return barcode.decompose()
+
+
+def _render_barcode_image(reference: str, width_mm: float, height_mm: float) -> BytesIO:
+    """Render Code 39 barcode to PNG buffer."""
+    value = _barcode_value(reference)
+    opts = {
+        "module_width": 0.33,
+        "module_height": height_mm,
+        "quiet_zone": 2.0,
+        "font_size": 6,
+        "write_text": False,
+        "dpi": 300,
+    }
+    buf = BytesIO()
+    Code39(value, writer=ImageWriter(), add_checksum=False).write(buf, opts)
+    buf.seek(0)
+    return buf
 
 
 def _draw_code39_bars(
@@ -202,68 +221,47 @@ def render_batch_pdf(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    pdf = canvas.Canvas(str(output_path), pagesize=A4, pageCompression=0, invariant=1)
-    pdf.setTitle("Code 39 batch")
-
-    page_width, page_height = A4
-    margin_x = 12 * mm
-    margin_y = 14 * mm
+    pdf = FPDF(unit="mm")
+    margin_x = 12
+    margin_y = 14
     columns = 2
     rows = 5
-    gap_x = 8 * mm
-    gap_y = 6 * mm
-    cell_width = (page_width - (2 * margin_x) - gap_x) / columns
-    cell_height = (page_height - (2 * margin_y) - ((rows - 1) * gap_y)) / rows
+    gap_x = 8
+    gap_y = 6
+    page_w = 210
+    page_h = 297
+    cell_width = (page_w - 2 * margin_x - gap_x) / columns
+    cell_height = (page_h - 2 * margin_y - (rows - 1) * gap_y) / rows
     labels_per_page = columns * rows
     pages = _chunks(references, labels_per_page)
-    total_pages = len(pages)
+    barcode_h_mm = 14
 
-    for current_page, page_references in enumerate(pages, start=1):
+    for page_references in pages:
+        pdf.add_page(format="a4")
         for position, reference in enumerate(page_references):
             column = position % columns
             row = position // columns
-
             x = margin_x + column * (cell_width + gap_x)
-            y = page_height - margin_y - ((row + 1) * cell_height) - (row * gap_y)
-            label_header_height = 7 * mm
-            label_footer_height = 7 * mm
-            box_height = cell_height - label_header_height - label_footer_height
-            box_y = y
-            brand_y = y + cell_height - 4.5 * mm
-            barcode_y = box_y + ((box_height - (14 * mm)) / 2)
-            footer_y = y + 4 * mm
+            y = margin_y + row * (cell_height + gap_y)
+            box_h = cell_height - 14
+            box_y = y + 7
 
-            pdf.setLineWidth(0.5)
-            pdf.roundRect(x, box_y, cell_width, box_height, 4 * mm)
+            pdf.rect(x, box_y, cell_width, box_h, round_corners=True, style="D")
+            pdf.set_font("Helvetica", size=8)
+            pdf.set_xy(x, y)
+            pdf.cell(cell_width, 6, BRAND_TEXT, align="C")
 
-            pdf.setFont("Helvetica", 8)
-            pdf.drawCentredString(x + (cell_width / 2), brand_y, BRAND_TEXT)
+            barcode_buf = _render_barcode_image(reference, cell_width - 12, barcode_h_mm)
+            barcode_x = x + (cell_width - (cell_width - 12)) / 2
+            barcode_y_mm = box_y + (box_h - barcode_h_mm) / 2
+            pdf.image(barcode_buf, x=barcode_x, y=barcode_y_mm, w=cell_width - 12, h=barcode_h_mm)
 
-            barcode = code39.Standard39(
-                _barcode_value(reference),
-                barWidth=0.33 * mm,
-                barHeight=14 * mm,
-                checksum=0,
-                stop=1,
-            )
-            barcode_width = barcode.width
-            barcode_x = x + max((cell_width - barcode_width) / 2, 6 * mm)
-            barcode.drawOn(pdf, barcode_x, barcode_y)
-
-            pdf.setFont("Helvetica-Bold", 9)
-            pdf.drawCentredString(x + (cell_width / 2), footer_y, reference)
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.set_xy(x, box_y + box_h - 4)
+            pdf.cell(cell_width, 5, reference, align="C")
 
             if progress_callback:
                 progress_callback(reference)
 
-        pdf.setFont("Helvetica", 8)
-        pdf.drawRightString(
-            page_width - margin_x,
-            8 * mm,
-            f"Page {current_page}/{total_pages}",
-        )
-        if current_page < total_pages:
-            pdf.showPage()
-
-    pdf.save()
+    pdf.output(str(output_path))
     return output_path
