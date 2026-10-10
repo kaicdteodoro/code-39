@@ -64,6 +64,9 @@ class CardTemplate:
     sheet_layout: SheetLayout
     card_style: CardStyle = CardStyle()
     background_pdf: Path | None = None
+    # Some background PDFs are multi-page (e.g., front+verso in the same file).
+    # The renderer can select which page to use as the base canvas.
+    background_pdf_page_index: int = 0
     background_png: Path | None = None
     barcode_zone_mm: RectMM | None = None
     barcode_zone_radius_mm: float = 1.5
@@ -209,6 +212,14 @@ def _optional_path(value: Any, *, base_dir: Path, field_name: str) -> Path | Non
     return candidate
 
 
+def _require_non_negative_int(value: Any, *, field: str) -> int:
+    if not isinstance(value, int):
+        raise CardTemplateError(f"Field '{field}' must be an integer.")
+    if value < 0:
+        raise CardTemplateError(f"Field '{field}' must be >= 0.")
+    return value
+
+
 def load_card_template(path: Path) -> CardTemplate:
     """Load and validate the card template JSON (values in mm)."""
     data = _read_json(path)
@@ -237,6 +248,11 @@ def load_card_template(path: Path) -> CardTemplate:
     background_pdf = _optional_path(
         data.get("background_pdf"), base_dir=path.parent, field_name="background_pdf"
     )
+    background_pdf_page_index = 0
+    if "background_pdf_page_index" in data:
+        background_pdf_page_index = _require_non_negative_int(
+            data.get("background_pdf_page_index"), field="background_pdf_page_index"
+        )
     background_png = _optional_path(
         data.get("background_png"), base_dir=path.parent, field_name="background_png"
     )
@@ -278,6 +294,7 @@ def load_card_template(path: Path) -> CardTemplate:
         sheet_layout=sheet_layout,
         card_style=card_style,
         background_pdf=background_pdf,
+        background_pdf_page_index=background_pdf_page_index,
         background_png=background_png,
         barcode_zone_mm=barcode_zone_mm,
         barcode_zone_radius_mm=barcode_zone_radius_mm,

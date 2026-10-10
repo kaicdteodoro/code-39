@@ -301,7 +301,14 @@ def render_batch_cards_pdf(
         if not background_path.exists():
             raise CardRenderError(f"background_pdf not found: {background_path}")
         background_bytes = background_path.read_bytes()
-        base_page_probe = PdfReader(BytesIO(background_bytes)).pages[0]
+        bg_reader_probe = PdfReader(BytesIO(background_bytes))
+        bg_index = template.background_pdf_page_index
+        if bg_index >= len(bg_reader_probe.pages):
+            raise CardRenderError(
+                f"background_pdf_page_index out of range: {bg_index} "
+                f"(background has {len(bg_reader_probe.pages)} pages)."
+            )
+        base_page_probe = bg_reader_probe.pages[bg_index]
         page_w_pts = float(base_page_probe.mediabox.width)
         page_h_pts = float(base_page_probe.mediabox.height)
     elif template.background_png is not None:
@@ -403,7 +410,7 @@ def render_batch_cards_pdf(
     writer = PdfWriter()
 
     for overlay_page in overlay_reader.pages:
-        base_page = PdfReader(BytesIO(background_bytes)).pages[0]
+        base_page = PdfReader(BytesIO(background_bytes)).pages[template.background_pdf_page_index]
         base_page.merge_page(overlay_page)
         writer.add_page(base_page)
 
